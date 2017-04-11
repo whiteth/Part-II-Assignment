@@ -2,4 +2,103 @@
 title: "Part II 電腦作業"
 output: html_notebook
 ---
+在勞動經濟學中，我們經常關注各種因素對於工資的影響，其中一項是加入工會對於薪資的影響。
+
+首先請先執行以下程式，清空環境並引入Panel分析的套件plm。
+```{r, message=FALSE, warning=FALSE}
+rm(list=ls())
+library(plm)
+```
+
+
+1. 引入WAGEPAN.rda這個資料。
+```{r}
+
+```
+
+在WAGEPAN.rda這個資料中，nr代表某個勞動者，year代表資料所來自年份
+
+2. 請定義資料成為panel data，並取名WAGE_data。
+```{r}
+
+```
+
+***
+以下分析皆以WAGE_data為主
+
+3. 使用str()檢查nr及year兩個變數的class, 並使用levels()來查看資料橫跨年份
+```{r}
+
+```
+
+> factor是代表類別資料的一種class，它可以細分成可排序(ordered)類別（如年份、月份）及不可排序(unordered)類別（如性別）。
+
+4. 請依照<http://stats.idre.ucla.edu/r/modules/factor-variables/>的說明，將year轉成可排序類別變數
+```{r}
+
+```
+
+
+> WAGE_data裡有一些變數會隨著時間而改變，比如取對數後的實質薪資($lwage$)、工作經驗($exper$)、婚姻狀況($married$)和工會狀況($union$)。還有一些變數不會隨時間而改變，比如種族($hispan$和$black$)、教育年限($educ$)。
+
+### 初步資料觀察
+首先我們看有無加入工會是否會造成薪資的不同。
+
+5. 請將union使用as.logical()轉成logical  class，接著使用geom_boxplot()來繪製比較union=TRUE或FALSE兩群資料的lwage分配箱形圖（如何看請自行Wiki），並描述你的觀察。
+```{r}
+
+```
+
+
+6. 請計算比較不同工會狀況的平均lwage差異[hint: 在作業1中，我們學到使用dplyr::group_by()與dplyr::summarise()來計算不同群組的組內特徵。]
+```{r}
+
+```
+
+ 7. 我們擔心“單純比較不同工會狀態的平均薪資，反應出來的可能不會是單純的工會效果。會不會還包含教育年限的影響？” 請在不做迴歸估計下，單純觀察資料來判斷以上的擔心是否成立。
+```{r}
+
+```
+
+8. 將資料依教育年限高低分成≥12與<12兩群(變數取名為educ.high)，使用educ.high與union兩變數，觀察不同教育年限與工會狀態間的平均log薪資差異，並描述你看到的現象（有故事性更好）。[hint: dplyr::group_by()可以放超過一個分類變數，用逗點分隔即可 ]
+```{r}
+
+```
+
+### 模型估計
+9. 考慮兩個迴歸模型：
+$$lwage_{it}	=\beta_{0}+\beta_{1}union_{it}+\epsilon_{it}...(model1)$$
+$$lwage_{it}	=\beta_{0}+\beta_{1}union_{it}+\beta_{2}educ.high_{i}+\epsilon_{it}...(model2)$$
+個別對兩個模型進行Pooled OLS估計，兩者的$\beta_1$係數估計值有什麼不同？為什麼？[hint: 可以使用stargazer套件，並以指令stargazer(model1,model2,type="text")將估計結果並列呈現以方便比較]
+```{r, message=FALSE, warning=FALSE}
+
+```
+
+10. 分別計算個別勞動者在樣本期間的平均lwage與平均union，接著畫出兩者間的離散圖及在圖面上加上估計迴歸線。由兩者間的關係，說明勞動者的固定效果如何影響lwage與union兩個變數。
+```{r}
+
+```
+
+
+11. 對lwage, union及educ.high進行組內demean，並觀察demean後的變數離散度，那一個變數的離散度為零？為什麼？
+```{r}
+
+```
+
+12. 考慮如下的模型
+$$lwage_{it}=\beta_{1}union_{it}+c_{i}+\epsilon_{it}$$
+請分別從固定效果（其估計式有時稱為within estimator）及隨機效果來估算$\beta_1$。
+```{r, warning=FALSE}
+
+```
+
+13. 請檢定固定效果是否與勞動者的工會狀態有關連，並說明適不適合使用隨機效果模型。
+```{r}
+
+```
+
+14. 請檢定是否存在單純與個人特質有關的隨機效果項，並說明適不適合使用Pooled OLS。
+```{r}
+
+```
 
