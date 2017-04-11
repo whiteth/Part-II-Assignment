@@ -2,7 +2,7 @@
 title: "Part II 電腦作業"
 output: html_notebook
 ---
-作業題目有些LaTex數學式，你可以按上方的Preview來呈現完整的數學符號。
+作業題目有些LaTex數學式，你可以按RStudio上方的Preview來呈現完整的數學符號。
 
 在勞動經濟學中，我們經常關注各種因素對於工資的影響，其中一項是加入工會對於薪資的影響。
 
