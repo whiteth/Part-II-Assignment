@@ -15,14 +15,15 @@ library(plm)
 
 1. 引入WAGEPAN.rda這個資料。
 ```{r}
-
+load("d:/R/HW2/WAGEPAN.RData")
+WAGEPAN
 ```
 
 在WAGEPAN.rda這個資料中，nr代表某個勞動者，year代表資料所來自年份
 
 2. 請定義資料成為panel data，並取名WAGE_data。
 ```{r}
-
+WAGE_data<-pdata.frame(WAGEPAN,c("nr","year"))
 ```
 
 ***
@@ -30,8 +31,12 @@ library(plm)
 
 3. 使用str()檢查nr及year兩個變數的class, 並使用levels()來查看資料橫跨年份
 ```{r}
-
+with(WAGE_data,{str(nr)
+                str(year)
+                levels(nr)})
+levels(WAGE_data$year)
 ```
+# nr 與 year 都是因子型變數，其中nr有545個，年份有8年
 
 > factor是代表類別資料的一種class，它可以細分成可排序(ordered)類別（如年份、月份）及不可排序(unordered)類別（如性別）。
 
