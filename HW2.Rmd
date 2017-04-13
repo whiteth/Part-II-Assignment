@@ -42,7 +42,8 @@ levels(WAGE_data$year)
 
 4. 請依照<http://stats.idre.ucla.edu/r/modules/factor-variables/>的說明，將year轉成可排序類別變數
 ```{r}
-
+WAGE_data$year<-ordered(WAGE_data$year)
+levels(WAGE_data$year)
 ```
 
 
@@ -53,6 +54,8 @@ levels(WAGE_data$year)
 
 5. 請將union使用as.logical()轉成logical  class，接著使用geom_boxplot()來繪製比較union=TRUE或FALSE兩群資料的lwage分配箱形圖（如何看請自行Wiki），並描述你的觀察。
 ```{r}
+WAGE_data$union<- as.logical(WAGE_data$union)
+class(WAGE_data$union)
 
 ```
 
