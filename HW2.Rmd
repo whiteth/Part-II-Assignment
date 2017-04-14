@@ -35,8 +35,9 @@ with(WAGE_data,{str(nr)
                 str(year)
                 levels(nr)})
 levels(WAGE_data$year)
-```
 # nr 與 year 都是因子型變數，其中nr有545個，年份有8年
+
+```
 
 > factor是代表類別資料的一種class，它可以細分成可排序(ordered)類別（如年份、月份）及不可排序(unordered)類別（如性別）。
 
@@ -54,19 +55,29 @@ levels(WAGE_data$year)
 
 5. 請將union使用as.logical()轉成logical  class，接著使用geom_boxplot()來繪製比較union=TRUE或FALSE兩群資料的lwage分配箱形圖（如何看請自行Wiki），並描述你的觀察。
 ```{r}
+library(ggplot2)
+library(dplyr)
 WAGE_data$union<- as.logical(WAGE_data$union)
 class(WAGE_data$union)
+WAGE_data %>% ggplot(aes(x=union,y=lwage))+geom_boxplot()
 
+### 從圖中可以明顯的看出，加入工會的人的工資分佈相對來說更窄，，更為集中在中位數附近（四分位距變窄），且其最小值、中位數、上四分位數、下四分位數比沒加入工會的有明顯的提高，但最大值變小，看起來工會有降低高工資，提高低工資，并使工資分佈更為集中的效果。
 ```
 
 
 6. 請計算比較不同工會狀況的平均lwage差異[hint: 在作業1中，我們學到使用dplyr::group_by()與dplyr::summarise()來計算不同群組的組內特徵。]
 ```{r}
-
+WAGE_data %>% dplyr::group_by(union) %>% dplyr::summarise(mean(lwage))
 ```
 
  7. 我們擔心“單純比較不同工會狀態的平均薪資，反應出來的可能不會是單純的工會效果。會不會還包含教育年限的影響？” 請在不做迴歸估計下，單純觀察資料來判斷以上的擔心是否成立。
 ```{r}
+WAGE_data %>% dplyr::group_by(educ) %>% dplyr::summarise(mean(lwage)) 
+### 可以看到平均薪資隨著教育的上升有個上升的趨勢 
+
+WAGE_data %>% dplyr::group_by(union,educ) %>% dplyr::summarise(mean(lwage)) -> WAGE.mean
+names(WAGE.mean)[3]<-"mlwage"
+WAGE.mean %>% ggplot(aes(x=educ,y=mlwage,color=union))+geom_point()
 
 ```
 
