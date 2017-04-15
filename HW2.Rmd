@@ -10,6 +10,9 @@ output: html_notebook
 ```{r, message=FALSE, warning=FALSE}
 rm(list=ls())
 library(plm)
+library(dplyr)
+library(ggplot2)
+library(psych)
 ```
 
 
@@ -31,9 +34,9 @@ WAGE_data<-pdata.frame(WAGEPAN,c("nr","year"))
 
 3. 使用str()檢查nr及year兩個變數的class, 並使用levels()來查看資料橫跨年份
 ```{r}
-with(WAGE_data,{str(nr)
-                str(year)
-                levels(nr)})
+str(WAGE_data$nr)
+str(WAGE_data$year)
+levels(WAGE_data$nr)
 levels(WAGE_data$year)
 # nr 與 year 都是因子型變數，其中nr有545個，年份有8年
 
@@ -55,8 +58,6 @@ levels(WAGE_data$year)
 
 5. 請將union使用as.logical()轉成logical  class，接著使用geom_boxplot()來繪製比較union=TRUE或FALSE兩群資料的lwage分配箱形圖（如何看請自行Wiki），並描述你的觀察。
 ```{r}
-library(ggplot2)
-library(dplyr)
 WAGE_data$union<- as.logical(WAGE_data$union)
 class(WAGE_data$union)
 WAGE_data %>% ggplot(aes(x=union,y=lwage))+geom_boxplot()
@@ -73,7 +74,7 @@ WAGE_data %>% dplyr::group_by(union) %>% dplyr::summarise(mean(lwage))
  7. 我們擔心“單純比較不同工會狀態的平均薪資，反應出來的可能不會是單純的工會效果。會不會還包含教育年限的影響？” 請在不做迴歸估計下，單純觀察資料來判斷以上的擔心是否成立。
 ```{r}
 WAGE_data %>% dplyr::group_by(educ) %>% dplyr::summarise(mean(lwage)) 
-### 可以看到平均薪資隨著教育的上升有個上升的趨勢 
+### 可以看到總體平均薪資隨著教育的上升有個上升的趨勢 
 
 WAGE_data %>% dplyr::group_by(union,educ) %>% dplyr::summarise(mean(lwage)) -> WAGE.mean
 names(WAGE.mean)[3]<-"mlwage"
@@ -83,7 +84,12 @@ WAGE.mean %>% ggplot(aes(x=educ,y=mlwage,color=union))+geom_point()
 
 8. 將資料依教育年限高低分成≥12與<12兩群(變數取名為educ.high)，使用educ.high與union兩變數，觀察不同教育年限與工會狀態間的平均log薪資差異，並描述你看到的現象（有故事性更好）。[hint: dplyr::group_by()可以放超過一個分類變數，用逗點分隔即可 ]
 ```{r}
+educ.high<-(WAGE_data$educ>12)
+WAGE_data<-cbind(WAGE_data,educ.high)
 
+WAGE_data %>% dplyr::group_by(union,educ.high) %>% dplyr::summarise(mean(lwage))
+
+## 薪資會受到來自教育年限和工會狀態有相關性，平均來看，其他條件不變下，教育年限越高，平均薪資越高（教育提高了人力資本）；加入工會的平均薪資比沒加入高（工會作為一個勞方阻止，提高了工薪階層與資方的議價能力）。
 ```
 
 ### 模型估計
@@ -92,34 +98,64 @@ $$lwage_{it}	=\beta_{0}+\beta_{1}union_{it}+\epsilon_{it}...(model1)$$
 $$lwage_{it}	=\beta_{0}+\beta_{1}union_{it}+\beta_{2}educ.high_{i}+\epsilon_{it}...(model2)$$
 個別對兩個模型進行Pooled OLS估計，兩者的$\beta_1$係數估計值有什麼不同？為什麼？[hint: 可以使用stargazer套件，並以指令stargazer(model1,model2,type="text")將估計結果並列呈現以方便比較]
 ```{r, message=FALSE, warning=FALSE}
+library(stargazer)
+model1 <- lwage~ union
+model2 <- lwage~ union + educ.high
 
+pool1 <- plm(model1, data = WAGE_data, model = "pooling")
+pool2 <- plm(model2, data= WAGE_data, model = "pooling")
+stargazer(pool1, pool2,type = "text")
+
+## 教育年限是一個重要的解釋變數，它既會影響薪資，也會影響一個人是否加入工會的決定。如我們之前箱形圖看到的，加入工會的工資雖然會提高，但會更集中在平均值附近，也許接受高等教育的人對自己有更大的期望，因此會選擇不加入工會以謀求更高的薪資。
 ```
 
 10. 分別計算個別勞動者在樣本期間的平均lwage與平均union，接著畫出兩者間的離散圖及在圖面上加上估計迴歸線。由兩者間的關係，說明勞動者的固定效果如何影響lwage與union兩個變數。
 ```{r}
+WAGE_data %>% group_by(nr) %>% summarise_each(funs(mean)) ->id.mean
+id1<-lm(model1,data=id.mean)
+id2<-lm(model2,data=id.mean)
+id.mean %>% ggplot(aes(x=union,y=lwage)) + geom_point()+stat_function(fun=function(x){
+  id1$coefficients[1]+id1$coefficients[2]*x
+  },color="black",linetype="solid")  + stat_function(fun=function(x){
+  id2$coefficients[1]+id2$coefficients[2]*x
+  },color="black",linetype="dashed")
 
+## 勞動者的固定效果（教育），看起來會使得沒加入工會的薪資降低，但會使參加工會的效果提升
 ```
 
 
 11. 對lwage, union及educ.high進行組內demean，並觀察demean後的變數離散度，那一個變數的離散度為零？為什麼？
 ```{r}
+WAGE_data$lwage_demean<-Within(WAGE_data$lwage,effect=c('individual'))
+##  邏輯型變數無法demean，但是就算是轉化為數值型，仍無法demean，不懂如何解決，所以後面用educ demean 沒用educ_high demean
+##  WAGE_data$union_demean<-Within(as.numeric(WAGE_data$union),effect=c('individual'))
+WAGE_data$educ.high_demean<-Within(WAGE_data$educ,effect=c('individual'))
+describe(WAGE_data$educ.high_demean)
 
+## 教育年限的離散度為0，因為教育年限通常在工作后就固定了，他只會隨個體不同而不同，但并不會隨時間改變，而加入工會、薪資會隨時間變動。
 ```
 
 12. 考慮如下的模型
 $$lwage_{it}=\beta_{1}union_{it}+c_{i}+\epsilon_{it}$$
 請分別從固定效果（其估計式有時稱為within estimator）及隨機效果來估算$\beta_1$。
 ```{r, warning=FALSE}
+fixid_wage<-plm(model1,data=WAGE_data, model ="within", effect ="individual")
+r_wage<-plm(model1,data = WAGE_data, model = "random")
+stargazer(fixid_wage,r_wage,type = "text")
 
 ```
 
 13. 請檢定固定效果是否與勞動者的工會狀態有關連，並說明適不適合使用隨機效果模型。
 ```{r}
+phtest(fixid_wage,r_wage)
 
+# Hausman test 檢定 p值小於5%，固定效果與工會狀態有關聯，不適合使用隨機效果模型
 ```
 
 14. 請檢定是否存在單純與個人特質有關的隨機效果項，並說明適不適合使用Pooled OLS。
 ```{r}
+pool1
+pwtest(pool1)
 
+# 存在與個人特質有關的隨機效果項，不適合使用 Pooled OLS.
 ```
-
