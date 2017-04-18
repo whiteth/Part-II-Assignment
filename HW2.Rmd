@@ -18,8 +18,7 @@ library(psych)
 
 1. 引入WAGEPAN.rda這個資料。
 ```{r}
-load("d:/R/HW2/WAGEPAN.RData")
-WAGEPAN
+load("WAGEPAN.RData")
 ```
 
 在WAGEPAN.rda這個資料中，nr代表某個勞動者，year代表資料所來自年份
@@ -36,10 +35,7 @@ WAGE_data<-pdata.frame(WAGEPAN,c("nr","year"))
 ```{r}
 str(WAGE_data$nr)
 str(WAGE_data$year)
-levels(WAGE_data$nr)
 levels(WAGE_data$year)
-# nr 與 year 都是因子型變數，其中nr有545個，年份有8年
-
 ```
 
 > factor是代表類別資料的一種class，它可以細分成可排序(ordered)類別（如年份、月份）及不可排序(unordered)類別（如性別）。
@@ -141,7 +137,7 @@ $$lwage_{it}=\beta_{1}union_{it}+c_{i}+\epsilon_{it}$$
 ```{r, warning=FALSE}
 fixid_wage<-plm(model1,data=WAGE_data, model ="within", effect ="individual")
 r_wage<-plm(model1,data = WAGE_data, model = "random")
-stargazer(fixid_wage,r_wage,type = "text")
+stargazer(fixid_wage,r_wage,type = "text",column.labels = c("FE","RE"))
 
 ```
 
