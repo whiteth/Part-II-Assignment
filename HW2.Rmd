@@ -69,19 +69,17 @@ WAGE_data %>% dplyr::group_by(union) %>% dplyr::summarise(mean(lwage))
 
  7. 我們擔心“單純比較不同工會狀態的平均薪資，反應出來的可能不會是單純的工會效果。會不會還包含教育年限的影響？” 請在不做迴歸估計下，單純觀察資料來判斷以上的擔心是否成立。
 ```{r}
-WAGE_data %>% dplyr::group_by(educ) %>% dplyr::summarise(mean(lwage)) 
+WAGE_data %>% dplyr::group_by(educ) %>% dplyr::summarise(mlwage=mean(lwage),munion=mean(union)) -> data2
+
+data2 %>% ggplot(aes(x=educ,y=mlwage))+geom_point()
 ### 可以看到總體平均薪資隨著教育的上升有個上升的趨勢 
-
-WAGE_data %>% dplyr::group_by(union,educ) %>% dplyr::summarise(mean(lwage)) -> WAGE.mean
-names(WAGE.mean)[3]<-"mlwage"
-WAGE.mean %>% ggplot(aes(x=educ,y=mlwage,color=union))+geom_point()
-
+data2 %>% ggplot(aes(x=educ,y=munion))+geom_point()
+### 可以看到參與工會的比率隨著教育的上升有個上升的趨勢
 ```
 
 8. 將資料依教育年限高低分成≥12與<12兩群(變數取名為educ.high)，使用educ.high與union兩變數，觀察不同教育年限與工會狀態間的平均log薪資差異，並描述你看到的現象（有故事性更好）。[hint: dplyr::group_by()可以放超過一個分類變數，用逗點分隔即可 ]
 ```{r}
-educ.high<-(WAGE_data$educ>12)
-WAGE_data<-cbind(WAGE_data,educ.high)
+WAGE_data$educ.high<-(WAGE_data$educ>=12)
 
 WAGE_data %>% dplyr::group_by(union,educ.high) %>% dplyr::summarise(mean(lwage))
 
@@ -122,13 +120,18 @@ id.mean %>% ggplot(aes(x=union,y=lwage)) + geom_point()+stat_function(fun=functi
 
 11. 對lwage, union及educ.high進行組內demean，並觀察demean後的變數離散度，那一個變數的離散度為零？為什麼？
 ```{r}
+#WAGE_data<-pdata.frame(WAGE_data,c("nr","year"))
 WAGE_data$lwage_demean<-Within(WAGE_data$lwage,effect=c('individual'))
 ##  邏輯型變數無法demean，但是就算是轉化為數值型，仍無法demean，不懂如何解決，所以後面用educ demean 沒用educ_high demean
-##  WAGE_data$union_demean<-Within(as.numeric(WAGE_data$union),effect=c('individual'))
-WAGE_data$educ.high_demean<-Within(WAGE_data$educ,effect=c('individual'))
-describe(WAGE_data$educ.high_demean)
+WAGE_data$union<-as.numeric(WAGE_data$union)
+WAGE_data$union_demean<-Within(WAGE_data$union,effect=c('individual'))
+WAGE_data$educ.high<-as.numeric(WAGE_data$educ.high)
+WAGE_data$educ.high_demean<-Within(WAGE_data$educ.high,effect=c('individual'))
 
-## 教育年限的離散度為0，因為教育年限通常在工作后就固定了，他只會隨個體不同而不同，但并不會隨時間改變，而加入工會、薪資會隨時間變動。
+library(psych)
+WAGE_data %>% select(lwage_demean, union_demean, educ.high_demean) %>%
+  describe()
+## 教育年限的離散度(sd)為0，因為教育年限通常在工作后就固定了，他只會隨個體不同而不同，但并不會隨時間改變，而加入工會、薪資會隨時間變動。
 ```
 
 12. 考慮如下的模型
@@ -148,10 +151,10 @@ phtest(fixid_wage,r_wage)
 # Hausman test 檢定 p值小於5%，固定效果與工會狀態有關聯，不適合使用隨機效果模型
 ```
 
-14. 請檢定是否存在單純與個人特質有關的隨機效果項，並說明適不適合使用Pooled OLS。
+14. 當在Pooled OLS 與RE選擇時，請檢定是否存在單純與個人特質有關的隨機效果項，以使用RE。
 ```{r}
 pool1
 pwtest(pool1)
 
-# 存在與個人特質有關的隨機效果項，不適合使用 Pooled OLS.
+# 存在與個人特質有關的隨機效果項，故可使用RE，但使用 Pooled OLS也OK.
 ```
