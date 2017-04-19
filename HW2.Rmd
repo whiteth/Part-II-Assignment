@@ -104,25 +104,13 @@ stargazer(pool1, pool2,type = "text")
 ```
 
 10. 分別計算個別勞動者在樣本期間的平均lwage與平均union，接著畫出兩者間的離散圖及在圖面上加上估計迴歸線。由兩者間的關係，說明勞動者的固定效果如何影響lwage與union兩個變數。
-```{r}
-WAGE_data %>% group_by(nr) %>% summarise_each(funs(mean)) ->id.mean
-id1<-lm(model1,data=id.mean)
-id2<-lm(model2,data=id.mean)
-id.mean %>% ggplot(aes(x=union,y=lwage)) + geom_point()+stat_function(fun=function(x){
-  id1$coefficients[1]+id1$coefficients[2]*x
-  },color="black",linetype="solid")  + stat_function(fun=function(x){
-  id2$coefficients[1]+id2$coefficients[2]*x
-  },color="black",linetype="dashed")
 
-## 勞動者的固定效果（教育），看起來會使得沒加入工會的薪資降低，但會使參加工會的效果提升
-```
+[移到第12題探討]
 
 
 11. 對lwage, union及educ.high進行組內demean，並觀察demean後的變數離散度，那一個變數的離散度為零？為什麼？
 ```{r}
-#WAGE_data<-pdata.frame(WAGE_data,c("nr","year"))
 WAGE_data$lwage_demean<-Within(WAGE_data$lwage,effect=c('individual'))
-##  邏輯型變數無法demean，但是就算是轉化為數值型，仍無法demean，不懂如何解決，所以後面用educ demean 沒用educ_high demean
 WAGE_data$union<-as.numeric(WAGE_data$union)
 WAGE_data$union_demean<-Within(WAGE_data$union,effect=c('individual'))
 WAGE_data$educ.high<-as.numeric(WAGE_data$educ.high)
@@ -142,6 +130,20 @@ fixid_wage<-plm(model1,data=WAGE_data, model ="within", effect ="individual")
 r_wage<-plm(model1,data = WAGE_data, model = "random")
 stargazer(fixid_wage,r_wage,type = "text",column.labels = c("FE","RE"))
 
+```
+
+```{r}
+mean0.y<-mean(WAGE_data$lwage)
+mean0.x<-mean(WAGE_data$union)
+WAGE_data %>% group_by(nr) %>%
+  summarise(mean.lwage=mean(lwage),mean.union=mean(union)) %>%
+  ggplot(aes(x=mean.union,y=mean.lwage)) +
+  geom_point()+
+  geom_smooth(method="lm",se=FALSE)+
+  stat_function(fun=function(x){
+    mean0.y+fixid_wage$coefficients*(x-mean0.x)
+  },linetype="dashed")
+## 虚線為FE的估計結果，藍線為OLS的結果。由圖形上可觀察到，OLS斜率有向上偏誤，表示勞動者的固定效果大致而言會使得薪資較高，且與參與工會有正向關連。
 ```
 
 13. 請檢定固定效果是否與勞動者的工會狀態有關連，並說明適不適合使用隨機效果模型。
